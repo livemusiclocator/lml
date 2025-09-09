@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+domains=(
+    "adelaide.lml.test"
+    "gigs.lml.test"
+    "perth.lml.test"
+    "sydney.lml.test"
+)
+
+rails_domains=(
+    "api.lml.test"
+    "brisbane.lml.test"
+    "castlemaine.lml.test"
+    "geelong.lml.test"
+    "goldfields.lml.test"
+    "livemusiclocator.com.test"
+    "melbourne.lml.test"
+    "stkilda.lml.test"
+    "www.livemusiclocator.com.test"
+)
+
+rm caddyfile
+
+for domain in "${domains[@]}"; do
+  if [[ -z $(cat /etc/hosts | grep -e $domain) ]]; then
+    echo "$domain missing from hosts file, adding now"
+    echo "127.0.0.1 $domain" | sudo tee -a /etc/hosts
+  fi
+
+  echo "
+  $domain {
+    log
+    root * /var/www
+    encode zstd gzip
+    tls internal
+    reverse_proxy localhost:5173
+  }
+  " >>caddyfile
+done
+
+for domain in "${rails_domains[@]}"; do
+  if [[ -z $(cat /etc/hosts | grep -e $domain) ]]; then
+    echo "$domain missing from hosts file, adding now"
+    echo "127.0.0.1 $domain" | sudo tee -a /etc/hosts
+  fi
+
+  echo "
+  $domain {
+    log
+    root * /var/www
+    encode zstd gzip
+    tls internal
+    reverse_proxy localhost:3000
+  }
+  " >>caddyfile
+done
+caddy run

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -e
+
+pushd lml >/dev/null
+if ! brew bundle check >/dev/null; then
+    echo "installing shared brew bundles"
+    brew bundle install
+fi
+
+mise install --silent
+eval "$(mise hook-env -s bash)"
+popd >/dev/null
+
+if [ -f Brewfile ] && ! brew bundle check >/dev/null; then
+    echo "installing project brew bundles"
+    brew bundle install
+fi
+
+mise install --silent
+eval "$(mise hook-env -s bash)"
