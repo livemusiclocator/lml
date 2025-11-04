@@ -8,6 +8,7 @@ domains=(
 )
 
 rails_domains=(
+    "lml.test"
     "api.lml.test"
     "brisbane.lml.test"
     "castlemaine.lml.test"
