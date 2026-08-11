@@ -7,6 +7,15 @@ domains=(
     "sydney.lml.test"
 )
 
+# serves the frontend client's built bundles the way
+# assets.livemusiclocator.com.au serves them in production
+asset_domains=(
+    "assets.lml.test"
+)
+
+# relative to the repo the caddy target was run from (lml, lml_rb) - all siblings
+asset_root="$(pwd)/../lml_frontend_client/dists/firebase_root"
+
 rails_domains=(
     "lml.test"
     "api.lml.test"
@@ -55,4 +64,25 @@ for domain in "${rails_domains[@]}"; do
   }
   " >>caddyfile
 done
+
+for domain in "${asset_domains[@]}"; do
+  if [[ -z $(cat /etc/hosts | grep -e $domain) ]]; then
+    echo "$domain missing from hosts file, adding now"
+    echo "127.0.0.1 $domain" | sudo tee -a /etc/hosts
+  fi
+
+  echo "
+  $domain {
+    log
+    root * $asset_root
+    encode zstd gzip
+    tls internal
+    # the rails explorer layout loads these with crossorigin=anonymous, and the
+    # dev bundle on firebase is served with a wildcard origin too
+    header Access-Control-Allow-Origin *
+    file_server
+  }
+  " >>caddyfile
+done
+
 caddy run
