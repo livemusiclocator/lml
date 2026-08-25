@@ -63,6 +63,69 @@ bundle **must** send `Access-Control-Allow-Origin`. Firebase does this per
 build in `lml_frontend_client/firebase.json`; locally caddy does it for
 `assets.lml.test`.
 
+## Why it is arranged this way
+
+It did not start here, and the history explains the shape.
+
+Originally the two halves lived on separate domains:
+
+- the front end was a static build on **github pages**, served per city from
+  `<location>.lml.live` - `melbourne.lml.live`, `castlemaine.lml.live` and so on
+- the API was rails on `api.lml.live`
+- `livemusiclocator.com.au` was a **google sites** page, maintained by hand, with
+  no connection to either
+
+That worked for someone who already had the url and badly for everyone who would
+have found the site by searching. A crawler arriving at a location subdomain got
+an empty div and a script tag, and the domain people actually search for was a
+disconnected brochure.
+
+So `livemusiclocator.com.au` moved here. Rails serves it now, and every page it
+serves carries server rendered metadata - `<title>`, open graph tags, and a
+schema.org json-ld block built by `lml_rb/app/services/page_metadata_factory.rb`.
+A crawler gets a described, indexable page without running any javascript. A
+browser gets that same page plus the script tag, and the react bundle takes over
+from firebase.
+
+The split is deliberate rather than an accident of hosting:
+
+| Who is asking | What they get | Served by |
+| --- | --- | --- |
+| a crawler | title, og tags, json-ld, and an html fallback | rails |
+| a browser | the same page, then the spa mounts over it | rails, then firebase |
+| the spa, once running | json | rails, on `api.lml.live` |
+
+The location subdomains still resolve - `config/routes.rb` redirects them to
+`www.livemusiclocator.com.au` with a `location` parameter, or to an edition - so
+old links and anything still pointing at github pages era urls keep working.
+
+## Every client side route needs a web route
+
+This is the rule that is easy to forget and obvious once you have been bitten.
+
+The spa uses `createBrowserRouter`, so its routes are **real urls**. Anyone who
+lands on one from a shared link, refreshes the page, or is a crawler following a
+link, sends that url to rails first. If rails has no route for it, they get a 404
+and the spa never gets the chance to run.
+
+So **every client side route in `lml_frontend_client` needs a matching route in
+`lml_rb`**, in the `gig_guide` concern in `config/routes.rb`.
+
+| Spa route (`src/App.jsx`) | Rails route (`config/routes.rb`) | Rails controller |
+| --- | --- | --- |
+| `index` | `root` | `Web::ExplorerController#index` |
+| `gigs/:id` | `scope "gigs" { get ":id" }` | `Web::ExplorerController#show` |
+| *(not added yet)* `acts/:id` | `scope "acts" { get ":id" }` | `Web::ActsController#show` |
+
+The rails side is not a placeholder that exists only to let the spa boot. It is
+the page the crawler indexes, so a new route also wants a generator in
+`PageMetadataFactory` - without one the page serves no title, no og tags and no
+json-ld, which is the whole reason rails is in front of it - and an html fallback
+in the view for anything not running javascript.
+
+The concern is included twice, at the root and again under
+`editions/:edition_id`, so a route added there gets the edition version for free.
+
 ## Setting up a machine
 
 Install the shared dependencies (caddy, mise, tmux) plus any the component
