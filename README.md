@@ -38,25 +38,62 @@ script tag:
 browser
   │
   ├── https://www.livemusiclocator.com.au/  ─────────────►  rails
-  │      renders the explorer layout, which emits:
-  │        • <script src="https://assets.livemusiclocator.com.au/…/lml_gig_explorer.js">
-  │        • <link href="…/lml_gig_explorer.css">
-  │        • window.APP_CONFIG = { gigsEndpoint, allLocations, themes, … }
-  │
-  ├── …/lml_gig_explorer.js  ───────────────────────────►  firebase hosting
+  │      renders the explorer layout, which emits:             │
+  │        • <script src="…/lml_gig_explorer.<hash>.js">       │ asks which
+  │        • <link href="…/lml_gig_explorer.<hash>.css">       │ files those
+  │        • window.APP_CONFIG = { gigsEndpoint, … }           ▼ are
+  │                                                       …/manifest.json
+  ├── …/lml_gig_explorer.<hash>.js  ────────────────────►  firebase hosting
   │
   └── APP_CONFIG.gigsEndpoint  ─────────────────────────►  the API (rails)
 ```
 
 Two consequences worth internalising:
 
-- **Rails decides which build of the front end you get**, via
+- **Rails decides which bundle you get**, via
   `lml_rb/config/spa_assets.yml` - one entry per rails environment
-  (`live` for production, `beta` for test, `dev` for development).
+  (`live` for production, `beta` for test, `dev` for development). It does not
+  decide the file names inside it; see below.
 - **The front end gets its configuration from the page that hosts it**, not from
   its own build. `window.APP_CONFIG` is merged over the defaults in
   `lml_frontend_client/src/config.js`, and that is how the API endpoint,
   the available locations and the map pin themes arrive.
+
+### How the back end picks up a new front end build
+
+Deploying the front end is enough. Rails notices on its own, within a minute, and
+does not need deploying itself.
+
+The front end's entry files are content hashed - `lml_gig_explorer.<hash>.js` -
+so every build is a new url, and firebase serves them `immutable`. Rails is never
+told what the hash is. Each build also publishes a `manifest.json` beside the
+bundle saying which files it just wrote, and that is the one url that never
+changes:
+
+```
+lml_frontend_client$ make deploy
+    ├── lml_gig_explorer.7z13PFfB.js      immutable, new name every build
+    ├── lml_gig_explorer.CKAysLBi.css     immutable
+    └── manifest.json                     no-cache, always the same url
+              ▲
+              │ read at request time, at most once a minute per process
+              │
+        SpaAssets  (lml_rb/app/services/spa_assets.rb)
+```
+
+`SpaAssets.current` is what the view helpers render from. It derives the bundle's
+base url from `config/spa_assets.yml`, reads `manifest.json` from beside it, and
+caches the answer for a minute.
+
+**Every failure falls back to what it already had**, ultimately the urls checked
+into `spa_assets.yml`. A manifest that is slow, missing, malformed or unreachable
+leaves the page exactly as it renders now - it can never take one down - and a
+manifest that is down is asked once a minute like any other rather than on every
+request.
+
+So `spa_assets.yml` has two jobs now: it picks the bundle per environment, and it
+is the last known good answer if the manifest cannot be read. `rake spa:fetch`
+still refreshes it, but you no longer need to run it to ship a front end change.
 
 Because the tags are emitted with `crossorigin="anonymous"`, whatever serves the
 bundle **must** send `Access-Control-Allow-Origin`. Firebase does this per
@@ -241,13 +278,18 @@ means you are still on the deployed one.
 
 | Component | Where it goes | How |
 | --- | --- | --- |
-| `lml_frontend_client` | firebase hosting, project `lml-seo` | manual: `./deploy_firebase` |
+| `lml_frontend_client` | firebase hosting, project `lml-seo` | manual: `make deploy` |
 | `lml_rb` | heroku, app `live-music-locator` | `git push heroku main` |
 
 Both are manual and neither is gated by CI. The front end deploy is documented in
 its README - note that it publishes the `live`, `beta` and `dev` bundles all at
 once, so **deploying replaces the bundle every other developer's local rails is
 loading** in "back end only" mode.
+
+**They are independent.** A front end change needs only `make deploy`; rails
+picks up the new file names from `manifest.json` within a minute, so there is no
+`rake spa:fetch`, no yaml to commit and no rails deploy behind it. Deploy rails
+when rails changes.
 
 ## Troubleshooting
 
@@ -267,3 +309,10 @@ this is required, not optional.
 
 **Front end changes don't show up.** `make watch` rebuilds, but there is no hot
 reload in this mode - reload the page. For hot reload, work in "front end only".
+
+**A deployed front end change isn't live.** The page names the bundle it is
+using, so look at the script tag before assuming a cache: if the hash matches
+what you just built, rails has picked it up and the browser is holding an old
+copy. If it does not, rails has not re-read `manifest.json` yet - it caches for a
+minute - or it could not reach it and has fallen back to `spa_assets.yml`, which
+logs a warning naming the reason.
