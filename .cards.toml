@@ -1,0 +1,33 @@
+title = "LML"
+
+[[statuses]]
+id = "todo"
+label = "Todo"
+color = "#f59e0b"
+
+[[statuses]]
+id = "inprogress"
+label = "In Progress"
+color = "#3b82f6"
+
+[[statuses]]
+id = "done"
+label = "Done"
+color = "#10b981"
+
+[[statuses]]
+id = "blocked"
+label = "Blocked"
+color = "#ef4444"
+
+# Uncomment to let 'cardthing work <name>' pick up cards automatically.
+# [[workers]]
+# name = "worker-1"
+# watch = "todo"
+# done = "done"
+# prompt = "Work through the card and implement what it describes."
+# model = "claude"
+# effort = "medium"
+# allowed_tools = ["Bash(cardthing:*)"]
+# poll_seconds = 15
+# workspace = false

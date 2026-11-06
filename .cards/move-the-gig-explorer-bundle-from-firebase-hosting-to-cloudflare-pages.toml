@@ -1,0 +1,43 @@
+name = "Move the gig explorer bundle from Firebase Hosting to Cloudflare Pages"
+status = "todo"
+description = """
+Serve assets.livemusiclocator.com.au from a Cloudflare Pages project instead of Firebase Hosting (project lml-seo), same hostname and headers, no Rails change. The full brief - why it's safe, the exact _headers file, the make deploy change, how to verify, cutover and rollback, and every doc to update - is in docs/assets-on-cloudflare-pages.md in this repo.
+
+Stop for a human before step 0 (which Cloudflare account owns the project) and before step 4 (the DNS cutover)."""
+created_at = "2026-11-06T23:43:28.805114Z"
+updated_at = "2026-11-06T23:43:28.834997Z"
+tags = [
+    "lml_frontend_client",
+    "lml_rb",
+    "hosting",
+    "cloudflare",
+]
+priority = "low"
+
+[[checklist]]
+text = "0. Decide which Cloudflare account owns the Pages project (ask Mark)"
+checked = false
+
+[[checklist]]
+text = "1. Generate dists/firebase_root/_headers from the Makefile build"
+checked = false
+
+[[checklist]]
+text = "2. make deploy uses wrangler pages deploy; wrangler as a dev dependency"
+checked = false
+
+[[checklist]]
+text = "3. Trial deploy: headers match Firebase line for line; local rails loads the pages.dev dev bundle"
+checked = false
+
+[[checklist]]
+text = "4. Cutover with Mark's go-ahead: custom domain, CORS check, Heroku manifest fetch, real deploy"
+checked = false
+
+[[checklist]]
+text = "5. Update docs across lml, lml_frontend_client and lml_rb"
+checked = false
+
+[[checklist]]
+text = "6. After a quiet spell: remove firebase.json, .firebaserc and the Firebase deployment"
+checked = false

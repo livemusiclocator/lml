@@ -1,1 +1,3 @@
 /caddyfile
+.cards/.logs/
+.cards/.claims/
