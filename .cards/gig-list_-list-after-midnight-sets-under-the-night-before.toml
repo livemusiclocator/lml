@@ -1,0 +1,17 @@
+name = "Gig list: list after-midnight sets under the night before"
+status = "todo"
+description = """
+The API dates a gig by the day it starts, and lml_frontend_client groups the list by that date (groupBy(gigs, "date") in src/pages/GigList/GigList.jsx). So a 00:30 Saturday DJ set heads Saturday's list above the afternoon shows, when for punters it's the end of Friday night.
+
+lml_ios now treats nights as running until 5am (LML/Models/Night.swift in lml_ios):
+- a gig starting before 05:00 belongs to the previous night, and is listed at the end of that night (evening, then after-midnight, then untimed)
+- 'today' is tonight: until 5am it's still last night
+- a range's nights are from..to: fetch one extra day after the range (for the last night's after-midnight sets) and drop gigs whose night is before the range
+
+Do the same on the website so the two agree. The gig page still shows the real date and time (Sat 21 Nov · 00:30).
+
+Live data on 2026-11-21: 5 of 578 gigs that week started between 00:00 and 01:00, all late DJ sets (The Old Bar, The Punters Club)."""
+created_at = "2026-11-21T04:03:21.950801Z"
+updated_at = "2026-11-21T04:03:21.950801Z"
+tags = ["frontend"]
+priority = "medium"
