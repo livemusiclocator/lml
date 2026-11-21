@@ -1,0 +1,15 @@
+name = "Act pages: only link acts with more than a name"
+status = "todo"
+description = """
+The website links every act in a gig's lineup to /acts/:id, but most acts are only a name, so the page repeats what the lineup showed. In a 21-act festival lineup on 2026-11-21 (Town Folk Festival), 4 acts had anything more.
+
+lml_ios now links an act only when it's worth a page: at least one link (website, Bandcamp, Instagram...), genres, or where they're from (Act.isWorthAPage in lml_ios). The gig endpoint's set.act doesn't carry those fields, so the app fetches each lineup act from /acts/:id (cached). An API change could avoid that: include the link fields (or a has_details flag) on set.act in the gig JSON.
+
+Data oddity spotted: Flyte and Minna have location 'UK' and country 'Australia', which looks swapped."""
+created_at = "2026-11-21T07:08:22.595515Z"
+updated_at = "2026-11-21T07:08:22.595515Z"
+tags = [
+    "frontend",
+    "acts",
+]
+priority = "low"
