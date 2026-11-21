@@ -1,0 +1,16 @@
+name = "Clean up genre and info tags in the API"
+status = "todo"
+description = """
+Tags are typed in by hand, so the same genre arrives several ways. Over 21 Nov - 5 Dec 2026 (769 gigs): 332 genre tags, 255 once case, dashes and spacing are merged (rock 114 + Rock 105; DJ 122 + dj 22 + Dj 6; indie 78 + Indie 25 ...). 191 tags were used once. Info tags spell Free 116 / free 68 / Free entry 19 / Free Entry 3 / FREE ENTRY 1, and 18+ / 18 Plus / 18+ Only.
+
+lml_ios now tidies in the app (Tags.swift and InfoFilter in lml_ios: merge by a key ignoring case, dashes and spacing; show the most used spelling, capitalised). Doing it in lml_rb instead would fix the website's filters too:
+- normalise tags on save (or map them to a canonical list) and backfill existing gigs
+- consider canonical info tags for the ones people filter on (Free, 18+, All ages), separate from free-text notes like 'free entry before 10pm'
+- then the app's tidying becomes a no-op and can go"""
+created_at = "2026-11-21T07:23:08.999971Z"
+updated_at = "2026-11-21T07:23:08.999971Z"
+tags = [
+    "api",
+    "tags",
+]
+priority = "medium"
